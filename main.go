@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"net/http"
 	"os"
 	"strings"
@@ -13,34 +14,56 @@ import (
 )
 
 func main() {
-
 	consumeCmd := flag.NewFlagSet("consume", flag.ExitOnError)
 	produceCmd := flag.NewFlagSet("produce", flag.ExitOnError)
 
-	br := flag.String("broker", "localhost:9092", "The kafka brokers to connect with")
-	// flag.Parse()
-	brokerList := strings.Split(*br, ",")
+	br := consumeCmd.String("broker", "", "The kafka brokers to connect with")
+	br2 := produceCmd.String("broker", "", "The kafka brokers to connect with")
 
 	if len(os.Args) < 2 {
-		flag.PrintDefaults()
+		fmt.Fprintln(os.Stderr, "'consume' or 'produce' sub command is required!")
 		os.Exit(1)
 	}
 
 	switch os.Args[1] {
+
 	case "consume":
+
 		consumeCmd.Parse(os.Args[2:])
+		if *br == "" {
+			consumeCmd.PrintDefaults()
+			os.Exit(1)
+		}
+
+		brokerList := strings.Split(*br, ",")
 		s := &server.Server{
 			Consumer: consumer.NewConsumer(brokerList),
 		}
 		defer s.Close()
+
+		// run the consumer server
 		s.Consume()
+
 	case "produce":
+
 		produceCmd.Parse(os.Args[2:])
+		if *br2 == "" {
+			produceCmd.PrintDefaults()
+			os.Exit(1)
+		}
+
+		brokerList := strings.Split(*br2, ",")
 		s := &server.Server{
 			AccessLogProducer: producer.NewProducer(brokerList),
 		}
 		defer s.Close()
+
+		// run the producer server
 		panic(http.ListenAndServe(":8080", s.CollectData()))
+
+	default:
+		fmt.Fprintln(os.Stderr, "'consume' or 'produce' sub command is required!")
+		consumeCmd.PrintDefaults()
 	}
 
 }

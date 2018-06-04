@@ -75,7 +75,6 @@ func (s *Server) Consume() {
 	}()
 	<-doneCh
 	fmt.Println("Processed:", msgCount, "messages")
-	os.Exit(1)
 }
 
 // Close closes the connection
