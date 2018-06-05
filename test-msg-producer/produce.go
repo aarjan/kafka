@@ -12,8 +12,8 @@ func main() {
 	go func() {
 		for i := 0; i <= 100; i++ {
 			produce(i)
-			done <- struct{}{}
 		}
+		done <- struct{}{}
 	}()
 	<-done
 }
