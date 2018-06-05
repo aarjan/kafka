@@ -1,121 +1,31 @@
 package server
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
-	"os"
-	"os/signal"
-	"time"
 
-	"gopkg.in/olivere/elastic.v5"
-
-	"github.com/Shopify/sarama"
-	"github.com/aarjan/kafka/model"
+	log "github.com/sirupsen/logrus"
 )
 
-// Server wraps the kafka producer and consumer
+// Server describes the hostname & port address of the running server
 type Server struct {
-	AccessLogProducer sarama.AsyncProducer
-	Consumer          sarama.Consumer
-	Client            *elastic.Client
+	ListenPort uint32
+	ListenHost string
 }
 
-// CollectData handles the request at endpoint '/'.
-// It then produces the events to Kafka topic.
-func (s *Server) CollectData() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/" {
-			http.NotFound(w, r)
-			return
-		}
-
-		entry := &model.AccessLogEntry{}
-
-		err := json.NewDecoder(r.Body).Decode(entry)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-		}
-		entry.TimeStamp = time.Now()
-
-		s.AccessLogProducer.Input() <- &sarama.ProducerMessage{
-			Topic: "access_log",
-			Key:   nil,
-			Value: entry,
-		}
-		log.Printf("sending data to kafka: %v", entry)
-		w.WriteHeader(200)
-	})
-}
-
-// Consume consumes the message and sents it to elasticsearch
-func (s *Server) Consume() {
-	consumer, err := s.Consumer.ConsumePartition("access_log", 0, sarama.OffsetOldest)
-	if err != nil {
-		panic(err)
-	}
-
-	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, os.Interrupt)
-
-	// count the number of msg consumed
-	msgCount := 0
-
-	// signal for finish
-	doneCh := make(chan struct{})
-	go func() {
-		for {
-			select {
-			case err := <-consumer.Errors():
-				log.Println(err)
-			case msg := <-consumer.Messages():
-				msgCount++
-				err := s.sendToElasticsearch(msg.Value)
-				if err != nil {
-					log.Println("error:", err)
-				}
-			case <-signals:
-				fmt.Println("\tInterrupt detected")
-				doneCh <- struct{}{}
-			}
+// Start starts the server with the given configuration
+func (s Server) Start(h http.Handler) {
+	defer func() {
+		if e := recover(); e != nil {
+			log.Error(e, "\nServer Failed.")
 		}
 	}()
-	<-doneCh
-	fmt.Println("Processed:", msgCount, "messages")
+	log.WithFields(log.Fields{"Host": s.ListenHost, "Port": s.ListenPort}).Info("Server Started.")
+
+	// run the server
+	panic(http.ListenAndServe(s.String(), h))
 }
 
-// sendToElasticsearch sends event logs to ES
-func (s *Server) sendToElasticsearch(body []byte) error {
-	ctx := context.Background()
-
-	// Index a accesslog (using JSON serialization)
-	put, err := s.Client.Index().
-		Index("accesslog").
-		Type("log").
-		BodyString(string(body)).
-		Do(ctx)
-	if err != nil {
-		// Handle error
-		panic(err)
-	}
-	fmt.Printf("Indexed log %s to index %s, type %s\n", put.Id, put.Index, put.Type)
-
-	// Flush to make sure the documents got written.
-	_, err = s.Client.Flush().Index("accesslog").Do(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return nil
-}
-
-// Close closes the connection
-func (s *Server) Close() {
-	if err := s.AccessLogProducer.Close(); err != nil {
-		log.Println("Failed to shutdown log collecter cleanly:", err)
-	}
-	if err := s.Consumer.Close(); err != nil {
-		log.Println("Failed to shutdown consumer cleanly:", err)
-	}
+func (s Server) String() string {
+	return s.ListenHost + ":" + fmt.Sprintf("%d", s.ListenPort)
 }

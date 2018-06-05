@@ -3,6 +3,7 @@ package consumer
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/Shopify/sarama"
 	"github.com/aarjan/kafka/model"
@@ -26,13 +27,13 @@ func NewClient(index string) *elastic.Client {
 	ctx := context.Background()
 	client, err := elastic.NewClient()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	// Ping the Elasticsearch server to get e.g. the version number
 	info, code, err := client.Ping("http://127.0.0.1:9200").Do(ctx)
 	if err != nil {
 		// Handle error
-		panic(err)
+		log.Fatal(err)
 	}
 	fmt.Printf("Elasticsearch returned with code %d and version %s\n", code, info.Version.Number)
 
@@ -40,7 +41,7 @@ func NewClient(index string) *elastic.Client {
 	esversion, err := client.ElasticsearchVersion("http://127.0.0.1:9200")
 	if err != nil {
 		// Handle error
-		panic(err)
+		log.Fatal(err)
 	}
 	fmt.Printf("Elasticsearch version %s\n", esversion)
 
@@ -48,14 +49,14 @@ func NewClient(index string) *elastic.Client {
 	exists, err := client.IndexExists(index).Do(ctx)
 	if err != nil {
 		// Handle error
-		panic(err)
+		log.Fatal(err)
 	}
 	if !exists {
 		// Create a new index.
 		createIndex, err := client.CreateIndex(index).BodyString(model.Mapping).Do(ctx)
 		if err != nil {
 			// Handle error
-			panic(err)
+			log.Fatal(err)
 		}
 		if !createIndex.Acknowledged {
 			// Not acknowledged
