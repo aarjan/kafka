@@ -3,10 +3,12 @@ package cmd
 import (
 	"fmt"
 	"os"
+
+	"github.com/aarjan/kafka/config"
 )
 
 // Execute executes the program
-func Execute() {
+func Execute(c config.AppConfig) {
 
 	if len(os.Args) < 2 {
 		usage()
@@ -16,10 +18,10 @@ func Execute() {
 	switch os.Args[1] {
 
 	case "consume":
-		consume()
+		consume(c)
 
 	case "produce":
-		produce()
+		produce(c)
 
 	default:
 		fmt.Fprintf(os.Stdout, "%q is not a valid command.\n\n", os.Args[1])

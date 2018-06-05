@@ -38,7 +38,7 @@ func readInfoFile() string {
 // Read Env on App start
 func readEnv() (AppConfig, error) {
 	defaults()
-	err := envconfig.Process("ccdb", &conf)
+	err := envconfig.Process("event", &conf)
 	if err != nil {
 		return conf, nil
 	}
@@ -47,8 +47,6 @@ func readEnv() (AppConfig, error) {
 
 // defaults add the default value to the Config
 func defaults() {
-	conf.ListenHost = "localhost"
-	conf.ListenPort = 8080
 	conf.Debug = false
 	conf.LogFormatJSON = false
 }
