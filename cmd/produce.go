@@ -14,7 +14,7 @@ import (
 var produceCmd = flag.NewFlagSet("produce", flag.ExitOnError)
 
 func produce() {
-	br := consumeCmd.String("broker", "", "The kafka broker to connect with. Specify a list of brokers separated by ','.")
+	br := produceCmd.String("broker", "", "The kafka broker to connect with. Specify a list of brokers separated by ','.")
 	produceCmd.Parse(os.Args[2:])
 
 	if *br == "" {
