@@ -31,13 +31,14 @@ func main() {
 
 		consumeCmd.Parse(os.Args[2:])
 		if *br == "" {
-			consumeCmd.PrintDefaults()
+			consumeCmd.Usage()
 			os.Exit(1)
 		}
 
 		brokerList := strings.Split(*br, ",")
 		s := &server.Server{
 			Consumer: consumer.NewConsumer(brokerList),
+			Client:   consumer.NewClient("accesslog"),
 		}
 		defer s.Close()
 
@@ -48,7 +49,7 @@ func main() {
 
 		produceCmd.Parse(os.Args[2:])
 		if *br2 == "" {
-			produceCmd.PrintDefaults()
+			produceCmd.Usage()
 			os.Exit(1)
 		}
 
@@ -63,7 +64,7 @@ func main() {
 
 	default:
 		fmt.Fprintln(os.Stderr, "'consume' or 'produce' sub command is required!")
-		consumeCmd.PrintDefaults()
+		consumeCmd.Usage()
 	}
 
 }

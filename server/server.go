@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -9,16 +10,21 @@ import (
 	"os/signal"
 	"time"
 
+	"gopkg.in/olivere/elastic.v5"
+
 	"github.com/Shopify/sarama"
-	"github.com/aarjan/kafka/producer"
+	"github.com/aarjan/kafka/model"
 )
 
-// Server wraps the kafka producer
+// Server wraps the kafka producer and consumer
 type Server struct {
 	AccessLogProducer sarama.AsyncProducer
 	Consumer          sarama.Consumer
+	Client            *elastic.Client
 }
 
+// CollectData handles the request at endpoint '/'.
+// It then produces the events to Kafka topic.
 func (s *Server) CollectData() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
@@ -26,7 +32,7 @@ func (s *Server) CollectData() http.Handler {
 			return
 		}
 
-		entry := &producer.AccessLogEntry{}
+		entry := &model.AccessLogEntry{}
 
 		err := json.NewDecoder(r.Body).Decode(entry)
 		if err != nil {
@@ -66,7 +72,10 @@ func (s *Server) Consume() {
 				log.Println(err)
 			case msg := <-consumer.Messages():
 				msgCount++
-				fmt.Println("Recieved messages", string(msg.Value))
+				err := s.sendToElasticsearch(msg.Value)
+				if err != nil {
+					log.Println("error:", err)
+				}
 			case <-signals:
 				fmt.Println("\tInterrupt detected")
 				doneCh <- struct{}{}
@@ -75,6 +84,30 @@ func (s *Server) Consume() {
 	}()
 	<-doneCh
 	fmt.Println("Processed:", msgCount, "messages")
+}
+
+// sendToElasticsearch sends event logs to ES
+func (s *Server) sendToElasticsearch(body []byte) error {
+	ctx := context.Background()
+
+	// Index a accesslog (using JSON serialization)
+	put, err := s.Client.Index().
+		Index("accesslog").
+		Type("log").
+		BodyString(string(body)).
+		Do(ctx)
+	if err != nil {
+		// Handle error
+		panic(err)
+	}
+	fmt.Printf("Indexed log %s to index %s, type %s\n", put.Id, put.Index, put.Type)
+
+	// Flush to make sure the documents got written.
+	_, err = s.Client.Flush().Index("accesslog").Do(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return nil
 }
 
 // Close closes the connection

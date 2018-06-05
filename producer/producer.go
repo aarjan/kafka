@@ -1,36 +1,11 @@
 package producer
 
 import (
-	"encoding/json"
 	"log"
 	"time"
 
 	"github.com/Shopify/sarama"
 )
-
-// AccessLogEntry is a schema for individual log
-type AccessLogEntry struct {
-	Msg       string    `json:"msg"`
-	Code      int       `json:"code"`
-	TimeStamp time.Time `json:"time"`
-	encoded   []byte
-	err       error
-}
-
-func (ale *AccessLogEntry) ensureEncoded() {
-	if ale.err == nil && ale.encoded == nil {
-		ale.encoded, ale.err = json.Marshal(ale)
-	}
-}
-
-func (ale *AccessLogEntry) Length() int {
-	ale.ensureEncoded()
-	return len(ale.encoded)
-}
-func (ale *AccessLogEntry) Encode() ([]byte, error) {
-	ale.ensureEncoded()
-	return ale.encoded, ale.err
-}
 
 // NewProducer returns a new sarama.AsyncProducer
 func NewProducer(brokerList []string) sarama.AsyncProducer {

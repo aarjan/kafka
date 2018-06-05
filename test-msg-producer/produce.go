@@ -8,10 +8,11 @@ import (
 )
 
 func main() {
-	done := make(chan bool)
+	done := make(chan struct{})
 	go func() {
 		for i := 0; i <= 100; i++ {
 			produce(i)
+			done <- struct{}{}
 		}
 	}()
 	<-done
