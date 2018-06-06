@@ -40,7 +40,7 @@ func readEnv() (AppConfig, error) {
 	defaults()
 	err := envconfig.Process("event", &conf)
 	if err != nil {
-		return conf, nil
+		return AppConfig{}, err
 	}
 	return conf, nil
 }

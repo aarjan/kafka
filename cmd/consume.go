@@ -3,6 +3,8 @@ package cmd
 import (
 	"fmt"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/aarjan/kafka/config"
 	"github.com/aarjan/kafka/consumer"
 	"github.com/aarjan/kafka/service"
@@ -24,6 +26,7 @@ func consume(c config.AppConfig) {
 	// 	os.Exit(1)
 	// }
 	// brokerList := strings.Split(*br, ",")
+
 	address := fmt.Sprintf("%s:%s", c.ESHost, c.ESPort)
 
 	s := &service.Service{
@@ -33,5 +36,6 @@ func consume(c config.AppConfig) {
 	defer s.Close()
 
 	// run the consumer service
+	log.WithFields(log.Fields{"Host": c.ESHost, "Port": c.ESPort}).Info("Kafka Consumer Started.")
 	s.Consume()
 }

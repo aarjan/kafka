@@ -20,7 +20,7 @@ func (s Server) Start(h http.Handler) {
 			log.Error(e, "\nServer Failed.")
 		}
 	}()
-	log.WithFields(log.Fields{"Host": s.ListenHost, "Port": s.ListenPort}).Info("Server Started.")
+	log.WithFields(log.Fields{"Host": s.ListenHost, "Port": s.ListenPort}).Info("Kafka Producer Started.")
 
 	// run the server
 	panic(http.ListenAndServe(s.String(), h))
