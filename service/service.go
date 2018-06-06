@@ -27,7 +27,7 @@ type Service struct {
 // It then produces the events to Kafka topic.
 func (s *Service) CollectData() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/" {
+		if r.URL.Path != "/event" {
 			http.NotFound(w, r)
 			return
 		}

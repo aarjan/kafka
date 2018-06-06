@@ -2,7 +2,7 @@
 
 A go CLI that,
 
-- listens to an event through a HTTP server
+- listens to an event through a HTTP server at endpoint '/event'
 
 - produces messages to a Kafka topic
 
