@@ -23,14 +23,14 @@ func NewConsumer(brokerList []string) sarama.Consumer {
 }
 
 // NewClient returns a new ES client
-func NewClient(index string) *elastic.Client {
+func NewClient(address, index string) *elastic.Client {
 	ctx := context.Background()
 	client, err := elastic.NewClient()
 	if err != nil {
 		log.Fatal(err)
 	}
 	// Ping the Elasticsearch server to get e.g. the version number
-	info, code, err := client.Ping("http://127.0.0.1:9200").Do(ctx)
+	info, code, err := client.Ping("http://" + address).Do(ctx)
 	if err != nil {
 		// Handle error
 		log.Fatal(err)
@@ -38,7 +38,7 @@ func NewClient(index string) *elastic.Client {
 	fmt.Printf("Elasticsearch returned with code %d and version %s\n", code, info.Version.Number)
 
 	// Getting the ES version number is quite common, so there's a shortcut
-	esversion, err := client.ElasticsearchVersion("http://127.0.0.1:9200")
+	esversion, err := client.ElasticsearchVersion("http://" + address)
 	if err != nil {
 		// Handle error
 		log.Fatal(err)
